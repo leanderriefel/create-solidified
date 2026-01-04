@@ -1,5 +1,5 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, addScripts, writeProjectFile } from "../utils/fs";
+import type { Generator } from "../../utils/types";
+import { addDependencies, addScripts, writeProjectFile } from "../../utils/fs";
 
 const vitestConfig = `import { defineConfig } from "vitest/config";
 import solid from "vite-plugin-solid";
@@ -33,7 +33,6 @@ describe("Example", () => {
 export const vitestGenerator: Generator = {
   name: "vitest",
   async apply(dir) {
-    // Add dependencies
     await addDependencies(
       dir,
       {
@@ -45,14 +44,12 @@ export const vitestGenerator: Generator = {
       true,
     );
 
-    // Add test scripts
     await addScripts(dir, {
       test: "vitest",
       "test:ui": "vitest --ui",
       "test:coverage": "vitest --coverage",
     });
 
-    // Write config files
     await writeProjectFile(dir, "vitest.config.ts", vitestConfig);
     await writeProjectFile(dir, "src/test/setup.ts", setupFile);
     await writeProjectFile(dir, "src/test/example.test.ts", exampleTest);

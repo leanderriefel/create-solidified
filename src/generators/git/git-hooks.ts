@@ -1,14 +1,16 @@
-import type { Generator, ProjectConfig } from "../utils/types";
+import type { Generator, ProjectConfig } from "../../utils/types";
 import {
   addDependencies,
   addScripts,
   writeProjectFile,
   readPackageJson,
   writePackageJson,
-} from "../utils/fs";
+} from "../../utils/fs";
+import { getExecCommand } from "../../utils/package-manager";
 
-const preCommitHook = `npx lint-staged
-`;
+function getPreCommitHook(pm: ProjectConfig["packageManager"]): string {
+  return `${getExecCommand(pm)} lint-staged\n`;
+}
 
 function getLintStagedConfig(config: ProjectConfig): Record<string, string[]> {
   const configMap: Record<string, string[]> = {};
@@ -56,7 +58,7 @@ export const gitHooksGenerator: Generator = {
       dir,
       {
         husky: "^9",
-        "lint-staged": "^15",
+        "lint-staged": "^16.2.7",
       },
       true,
     );
@@ -66,6 +68,7 @@ export const gitHooksGenerator: Generator = {
       "lint-staged": "lint-staged",
     });
 
+    const preCommitHook = getPreCommitHook(config.packageManager);
     await writeProjectFile(dir, ".husky/pre-commit", preCommitHook);
 
     const lintStagedConfig = getLintStagedConfig(config);

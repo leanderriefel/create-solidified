@@ -40,3 +40,29 @@ export interface Generator {
   name: string;
   apply: (dir: string, config: ProjectConfig) => Promise<void>;
 }
+
+export interface PluginConfig {
+  name: string;
+  from: string;
+  default?: boolean;
+}
+
+export interface FrameworkAdapter {
+  name: Framework;
+
+  // Build config manipulation
+  configPath: string;
+  addPlugin(dir: string, plugin: PluginConfig, call: string): Promise<void>;
+
+  // Paths
+  cssEntryPath: string;
+  routesDir: string;
+  entryPath: string;
+
+  // Dev server
+  devPort: number;
+  devCommand: string;
+
+  // Environment
+  envPrefix: string;
+}

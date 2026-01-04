@@ -92,6 +92,17 @@ main {
   }
 }
 
+/* About page */
+.about {
+  padding: 2rem 0;
+}
+
+.about h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
 /* Feature cards (used by homepage generator) */
 .features {
   display: flex;

@@ -1,6 +1,7 @@
 # Agents Guide
 
 Guide for working on the **create-solidified** CLI scaffolding tool.
+Look at the README.md for the project overview.
 
 ## Tech Stack
 

@@ -1,7 +1,9 @@
 import { createRoot, useKeyboard, useOnResize, useRenderer } from "@opentui/react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { createCliRenderer, measureText, TextAttributes } from "@opentui/core";
-import { scaffoldProject, getInstallCommand, getRunCommand } from "./utils/scaffold";
+import { scaffoldProject } from "./utils/scaffold";
+import { getInstallCommand, getRunCommand } from "./utils/package-manager";
+import { getDisabledOptions } from "./utils/compatibility";
 import type {
   PackageManager,
   Framework,
@@ -43,6 +45,10 @@ const FRAMEWORKS = [
   {
     name: "Vite + Solid Router",
     value: "vite-solid-router",
+  },
+  {
+    name: "SolidStart",
+    value: "solid-start",
   },
 ];
 
@@ -113,22 +119,42 @@ const c = {
   error: "#FF6B6B", // Light red
 };
 
-type SelectionStepProps = {
-  title: string;
-  options: { name: string; value: string }[];
-  selectedIndex: number;
+type SelectionOption = {
+  name: string;
+  value: string;
+  disabled?: boolean;
+  reason?: string;
 };
 
-const SelectionStep = ({ title, options, selectedIndex }: SelectionStepProps) => (
+type SelectionStepProps = {
+  title: string;
+  options: SelectionOption[];
+  selectedIndex: number;
+  hint?: string;
+};
+
+const SelectionStep = ({ title, options, selectedIndex, hint }: SelectionStepProps) => (
   <box flexDirection="column" alignItems="center">
     <text fg={c.accent}>{title}</text>
     <box flexDirection="column" alignItems="center" style={{ marginTop: 1 }}>
-      {options.map((option, index) => (
-        <text key={option.value} fg={index === selectedIndex ? c.accent : c.muted}>
-          {index === selectedIndex ? `▸ ${option.name} ◂` : `  ${option.name}  `}
-        </text>
-      ))}
+      {options.map((option, index) => {
+        const isSelected = index === selectedIndex;
+        const isDisabled = option.disabled === true;
+        const color = isDisabled ? c.muted : isSelected ? c.accent : c.secondary;
+        const label =
+          isDisabled && option.reason ? `${option.name} (${option.reason})` : option.name;
+        return (
+          <text key={option.value} fg={color}>
+            {isSelected ? `▸ ${label} ◂` : `  ${label}  `}
+          </text>
+        );
+      })}
     </box>
+    {hint && (
+      <text fg={c.muted} style={{ marginTop: 1 }} attributes={TextAttributes.DIM}>
+        {hint}
+      </text>
+    )}
   </box>
 );
 
@@ -141,6 +167,24 @@ const TITLE_WIDTHS = TITLE_CHOICES.map((text) => ({
 const pickTitle = (width: number) =>
   TITLE_WIDTHS.find((option) => option.width < width)?.text ??
   TITLE_WIDTHS[TITLE_WIDTHS.length - 1]!.text;
+
+function getNextEnabledIndex(
+  options: SelectionOption[],
+  startIndex: number,
+  delta: number,
+): number {
+  if (options.length === 0) return startIndex;
+  let nextIndex = startIndex;
+
+  for (let i = 0; i < options.length; i += 1) {
+    nextIndex = (nextIndex + delta + options.length) % options.length;
+    if (!options[nextIndex]?.disabled) {
+      return nextIndex;
+    }
+  }
+
+  return startIndex;
+}
 
 function App() {
   const [step, setStep] = useState<Step>("name");
@@ -173,6 +217,43 @@ function App() {
   const currentGitHooks = useMemo(() => GIT_HOOKS_OPTIONS[gitHooksIndex]!, [gitHooksIndex]);
   const currentDeployment = useMemo(() => DEPLOYMENT_OPTIONS[deploymentIndex]!, [deploymentIndex]);
 
+  const isClientOnly = currentFramework.value === "vite-solid-router";
+  const clientOnlyHint = "Client-only template: server features are disabled.";
+
+  useEffect(() => {
+    if (!isClientOnly) return;
+    if (DATABASES[databaseIndex]?.value !== "none") setDatabaseIndex(0);
+    if (AUTH_PROVIDERS[authIndex]?.value === "better-auth") setAuthIndex(0);
+    if (API_OPTIONS[apiIndex]?.value !== "none") setApiIndex(0);
+  }, [isClientOnly]);
+
+  const databaseOptions = useMemo<SelectionOption[]>(() => {
+    const disabled = getDisabledOptions(currentFramework.value as Framework, "database");
+    return DATABASES.map((option) => ({
+      ...option,
+      disabled: Boolean(disabled[option.value]),
+      reason: disabled[option.value],
+    }));
+  }, [currentFramework.value]);
+
+  const authOptions = useMemo<SelectionOption[]>(() => {
+    const disabled = getDisabledOptions(currentFramework.value as Framework, "auth");
+    return AUTH_PROVIDERS.map((option) => ({
+      ...option,
+      disabled: Boolean(disabled[option.value]),
+      reason: disabled[option.value],
+    }));
+  }, [currentFramework.value]);
+
+  const apiOptions = useMemo<SelectionOption[]>(() => {
+    const disabled = getDisabledOptions(currentFramework.value as Framework, "api");
+    return API_OPTIONS.map((option) => ({
+      ...option,
+      disabled: Boolean(disabled[option.value]),
+      reason: disabled[option.value],
+    }));
+  }, [currentFramework.value]);
+
   const selectionSteps: Array<{
     step:
       | "pm"
@@ -187,10 +268,11 @@ function App() {
       | "gitHooks"
       | "deployment";
     title: string;
-    options: { name: string; value: string }[];
+    options: SelectionOption[];
     index: number;
     setIndex: (value: number | ((value: number) => number)) => void;
     nextStep: Step;
+    hint?: string;
   }> = [
     {
       step: "pm",
@@ -219,26 +301,29 @@ function App() {
     {
       step: "database",
       title: "Select a database ORM",
-      options: DATABASES,
+      options: databaseOptions,
       index: databaseIndex,
       setIndex: setDatabaseIndex,
       nextStep: "auth",
+      hint: isClientOnly ? clientOnlyHint : undefined,
     },
     {
       step: "auth",
       title: "Select an auth provider",
-      options: AUTH_PROVIDERS,
+      options: authOptions,
       index: authIndex,
       setIndex: setAuthIndex,
       nextStep: "api",
+      hint: isClientOnly ? clientOnlyHint : undefined,
     },
     {
       step: "api",
       title: "Select an API layer",
-      options: API_OPTIONS,
+      options: apiOptions,
       index: apiIndex,
       setIndex: setApiIndex,
       nextStep: "testing",
+      hint: isClientOnly ? clientOnlyHint : undefined,
     },
     {
       step: "testing",
@@ -417,12 +502,19 @@ function App() {
     }
 
     if (activeSelectionStep) {
-      const optionsLength = activeSelectionStep.options.length;
-      if (key.name === "down" || key.name === "j")
-        activeSelectionStep.setIndex((i) => (i + 1) % optionsLength);
-      if (key.name === "up" || key.name === "k")
-        activeSelectionStep.setIndex((i) => (i - 1 + optionsLength) % optionsLength);
-      if (key.name === "return") setStep(activeSelectionStep.nextStep);
+      const options = activeSelectionStep.options;
+      if (key.name === "down" || key.name === "j") {
+        activeSelectionStep.setIndex((i) => getNextEnabledIndex(options, i, 1));
+      }
+      if (key.name === "up" || key.name === "k") {
+        activeSelectionStep.setIndex((i) => getNextEnabledIndex(options, i, -1));
+      }
+      if (key.name === "return") {
+        const selected = options[activeSelectionStep.index];
+        if (!selected?.disabled) {
+          setStep(activeSelectionStep.nextStep);
+        }
+      }
       return;
     }
 
@@ -476,6 +568,7 @@ function App() {
               title={activeSelectionStep.title}
               options={activeSelectionStep.options}
               selectedIndex={activeSelectionStep.index}
+              hint={activeSelectionStep.hint}
             />
           )}
 

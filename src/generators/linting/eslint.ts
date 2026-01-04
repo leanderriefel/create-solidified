@@ -1,5 +1,5 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, addScripts, writeProjectFile } from "../utils/fs";
+import type { Generator } from "../../utils/types";
+import { addDependencies, addScripts, writeProjectFile } from "../../utils/fs";
 
 const eslintConfig = `import js from "@eslint/js";
 import solid from "eslint-plugin-solid";

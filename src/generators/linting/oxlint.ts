@@ -1,5 +1,5 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, addScripts, writeProjectFile } from "../utils/fs";
+import type { Generator } from "../../utils/types";
+import { addDependencies, addScripts, writeProjectFile } from "../../utils/fs";
 
 const oxlintConfig = `{
   "$schema": "./node_modules/oxlint/configuration_schema.json",

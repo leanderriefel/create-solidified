@@ -1,5 +1,5 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, addEnvVar, addScripts, writeProjectFile } from "../utils/fs";
+import type { Generator } from "../../utils/types";
+import { addDependencies, addEnvVar, addScripts, writeProjectFile } from "../../utils/fs";
 
 const prismaSchema = `generator client {
   provider = "prisma-client-js"

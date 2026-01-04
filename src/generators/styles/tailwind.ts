@@ -1,11 +1,12 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, prependToFile } from "../utils/fs";
-import { addVitePlugin } from "../utils/vite";
+import type { Generator } from "../../utils/types";
+import { addDependencies, prependToFile } from "../../utils/fs";
+import { getAdapter } from "../../adapters";
 
 export const tailwindGenerator: Generator = {
   name: "tailwind",
-  async apply(dir) {
-    // Add dependencies
+  async apply(dir, config) {
+    const adapter = getAdapter(config.framework);
+
     await addDependencies(
       dir,
       {
@@ -15,11 +16,9 @@ export const tailwindGenerator: Generator = {
       true,
     );
 
-    // Add Tailwind import to CSS
-    await prependToFile(dir, "src/app.css", '@import "tailwindcss";');
+    await prependToFile(dir, adapter.cssEntryPath, '@import "tailwindcss";');
 
-    // Add Vite plugin
-    await addVitePlugin(
+    await adapter.addPlugin(
       dir,
       {
         name: "tailwindcss",

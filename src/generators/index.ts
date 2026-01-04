@@ -1,18 +1,24 @@
 import type { Generator, ProjectConfig } from "../utils/types";
-import { tailwindGenerator } from "./tailwind";
-import { unocssGenerator } from "./unocss";
-import { sassGenerator } from "./sass";
-import { drizzleGenerator } from "./drizzle";
-import { prismaGenerator } from "./prisma";
-import { vitestGenerator } from "./vitest";
-import { playwrightGenerator } from "./playwright";
-import { biomeGenerator } from "./biome";
-import { prettierGenerator } from "./prettier";
-import { gitHooksGenerator } from "./git-hooks";
-import { eslintGenerator } from "./eslint";
-import { oxlintGenerator } from "./oxlint";
-import { betterAuthGenerator } from "./better-auth";
-import { clerkGenerator } from "./clerk";
+import { tailwindGenerator } from "./styles/tailwind";
+import { unocssGenerator } from "./styles/unocss";
+import { sassGenerator } from "./styles/sass";
+import { drizzleGenerator } from "./database/drizzle";
+import { prismaGenerator } from "./database/prisma";
+import { vitestGenerator } from "./testing/vitest";
+import { playwrightGenerator } from "./testing/playwright";
+import { biomeGenerator } from "./linting/biome";
+import { prettierGenerator } from "./formatting/prettier";
+import { gitHooksGenerator } from "./git/git-hooks";
+import { eslintGenerator } from "./linting/eslint";
+import { oxlintGenerator } from "./linting/oxlint";
+import { betterAuthGenerator } from "./auth/better-auth";
+import { clerkGenerator } from "./auth/clerk";
+import { trpcGenerator } from "./api/trpc";
+import { honoGenerator } from "./api/hono";
+import { vercelGenerator } from "./deployment/vercel";
+import { netlifyGenerator } from "./deployment/netlify";
+import { cloudflareGenerator } from "./deployment/cloudflare";
+import { homepageGenerator } from "./homepage";
 
 // Registry of all available generators
 const generators: Record<string, Generator> = {
@@ -30,6 +36,11 @@ const generators: Record<string, Generator> = {
   oxlint: oxlintGenerator,
   "better-auth": betterAuthGenerator,
   clerk: clerkGenerator,
+  trpc: trpcGenerator,
+  hono: honoGenerator,
+  vercel: vercelGenerator,
+  netlify: netlifyGenerator,
+  cloudflare: cloudflareGenerator,
 };
 
 /**
@@ -96,6 +107,25 @@ export function getGeneratorsForConfig(config: ProjectConfig): Generator[] {
     result.push(clerkGenerator);
   }
 
+  // API
+  if (config.api === "trpc") {
+    result.push(trpcGenerator);
+  }
+  if (config.api === "hono") {
+    result.push(honoGenerator);
+  }
+
+  // Deployment
+  if (config.deployment === "vercel") {
+    result.push(vercelGenerator);
+  }
+  if (config.deployment === "netlify") {
+    result.push(netlifyGenerator);
+  }
+  if (config.deployment === "cloudflare") {
+    result.push(cloudflareGenerator);
+  }
+
   return result;
 }
 
@@ -109,6 +139,10 @@ export async function applyGenerators(dir: string, config: ProjectConfig): Promi
     console.log(`Applying ${generator.name}...`);
     await generator.apply(dir, config);
   }
+
+  // Homepage generator runs last to aggregate all features
+  console.log("Generating homepage...");
+  await homepageGenerator.apply(dir, config);
 }
 
 export { generators };

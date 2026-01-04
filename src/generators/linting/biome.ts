@@ -1,5 +1,5 @@
-import type { Generator } from "../utils/types";
-import { addDependencies, addScripts, writeProjectFile } from "../utils/fs";
+import type { Generator } from "../../utils/types";
+import { addDependencies, addScripts, writeProjectFile } from "../../utils/fs";
 
 function getBiomeConfig(linterEnabled: boolean, formatterEnabled: boolean): string {
   const config: any = {
